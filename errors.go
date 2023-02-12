@@ -21,6 +21,5 @@ func (e *HiDriveError) Error() string {
 }
 
 var (
-	ErrAuthNoToken = errors.New("no refresh token available")
-	//ErrNotImplemented = errors.New("function is missing implementation")
+	ErrShouldNotBeEmpty = errors.New("value should not be empty")
 )

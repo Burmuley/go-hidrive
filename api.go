@@ -1,66 +1,95 @@
 package go_hidrive
 
 import (
+	"context"
+	"encoding/json"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
-var DefaultEndpointPrefix string = "https://api.hidrive.strato.com/2.1"
+const (
+	StratoHiDriveAPIV21   = "https://api.hidrive.strato.com/2.1"      // Default HiDrive API endpoint
+	StratoHiDriveAuthURL  = "https://my.hidrive.com/client/authorize" // Default HiDrive authentication URL
+	StratoHiDriveTokenURL = "https://my.hidrive.com/oauth2/token"     // Default HiDrive token operations URL
+)
 
-type Api interface {
-	NewHTTPRequest(method, uri string, r io.Reader) (*http.Request, error)
-	NewGETRequest(uri string) (*http.Request, error)
-	NewPOSTRequest(uri string) (*http.Request, error)
-	NewDELETERequest(uri string) (*http.Request, error)
-	NewPUTRequest(uri string) (*http.Request, error)
+// Api - TODO
+type Api struct {
+	APIEndpoint string
+	HTTPClient  *http.Client
 }
 
-type DirApi interface {
-	Api
-	GetDir(path string, params map[string]string) (*HiDriveObject, error)
-	CreateDir(path string) (*HiDriveObject, error)
-	CreatePath(path string) (*HiDriveObject, error)
-	DeleteDir(path string, recursive bool) error
-}
-
-type FileApi interface {
-	GetFile(path string) (io.ReadCloser, error)
-	UploadFile(path string, fileBody io.ReadCloser) (*HiDriveObject, error)
-	DeleteFile(path string) error
-}
-
-type HDApi struct {
-	Authenticator *Authenticator
-	Endpoint      string
-}
-
-func NewApi(authenticator *Authenticator, endpoint string) *HDApi {
+func NewApi(client *http.Client, endpoint string) Api {
 	if endpoint == "" {
-		endpoint = DefaultEndpointPrefix
+		endpoint = StratoHiDriveAPIV21
 	}
-	return &HDApi{
-		Authenticator: authenticator,
-		Endpoint:      endpoint,
+	return Api{
+		APIEndpoint: endpoint,
+		HTTPClient:  client,
 	}
 }
 
-func (a *HDApi) NewHTTPRequest(method, uri string, r io.Reader) (*http.Request, error) {
-	return http.NewRequest(method, strings.Join([]string{a.Endpoint, uri}, "/"), r)
+func (a Api) NewHTTPRequest(ctx context.Context, method, uri string, r io.Reader) (*http.Request, error) {
+	return http.NewRequestWithContext(ctx, method, strings.Join([]string{a.APIEndpoint, uri}, "/"), r)
 }
 
-func (a *HDApi) NewGETRequest(uri string) (*http.Request, error) {
-	return http.NewRequest("GET", strings.Join([]string{a.Endpoint, uri}, "/"), nil)
+func (a Api) DoGET(ctx context.Context, uri string, params url.Values) (*http.Response, error) {
+	return a.DoHTTPRequest(ctx, "GET", uri, params, nil)
 }
 
-func (a *HDApi) NewPOSTRequest(uri string) (*http.Request, error) {
-	return http.NewRequest("POST", strings.Join([]string{a.Endpoint, uri}, "/"), nil)
+func (a Api) DoDELETE(ctx context.Context, uri string, params url.Values) (*http.Response, error) {
+	return a.DoHTTPRequest(ctx, "DELETE", uri, params, nil)
 }
 
-func (a *HDApi) NewDELETERequest(uri string) (*http.Request, error) {
-	return http.NewRequest("DELETE", strings.Join([]string{a.Endpoint, uri}, "/"), nil)
+func (a Api) DoPOST(ctx context.Context, uri string, params url.Values, body io.ReadCloser) (*http.Response, error) {
+	return a.DoHTTPRequest(ctx, "POST", uri, params, body)
 }
 
-func (a *HDApi) NewPUTRequest(uri string) (*http.Request, error) {
-	return http.NewRequest("DELETE", strings.Join([]string{a.Endpoint, uri}, "/"), nil)
+func (a Api) DoPUT(ctx context.Context, uri string, params url.Values, body io.ReadCloser) (*http.Response, error) {
+	return a.DoHTTPRequest(ctx, "PUT", uri, params, body)
+}
+
+func (a Api) DoHTTPRequest(ctx context.Context, method, uri string, params url.Values, body io.ReadCloser) (*http.Response, error) {
+	var (
+		req *http.Request
+		res *http.Response
+	)
+
+	{
+		var err error
+		if req, err = a.NewHTTPRequest(ctx, method, uri, body); err != nil {
+			return nil, err
+		}
+	}
+
+	req.URL.RawQuery = params.Encode()
+
+	{
+		var err error
+		if res, err = a.HTTPClient.Do(req); err != nil {
+			return nil, err
+		}
+	}
+
+	return res, nil
+}
+
+func (a Api) checkHTTPStatus(desiredCode int, res *http.Response) error {
+	var err error
+	var body []byte
+
+	if res.StatusCode != desiredCode {
+		hdErr := &HiDriveError{}
+		if body, err = io.ReadAll(res.Body); err != nil {
+			return err
+		}
+		if err := json.Unmarshal(body, hdErr); err != nil {
+			return err
+		}
+		return hdErr
+	}
+
+	return nil
 }

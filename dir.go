@@ -1,7 +1,7 @@
 package go_hidrive
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -9,46 +9,31 @@ import (
 	"strings"
 )
 
-type HDDirApi struct {
-	*HDApi
+type DirApi struct {
+	Api
+}
+
+func NewDirApi(client *http.Client, endpoint string) DirApi {
+	api := NewApi(client, endpoint)
+	return DirApi{api}
 }
 
 // GetDir retrieves directory information defined in the `path`.
-func (a *HDDirApi) GetDir(path string, params map[string]string) (*HiDriveObject, error) {
+func (d DirApi) GetDir(ctx context.Context, params url.Values) (*HiDriveObject, error) {
 	var (
-		query url.Values
-		req   *http.Request
-		cli   *http.Client
-		res   *http.Response
-		body  []byte
+		res  *http.Response
+		body []byte
 	)
 
 	{
 		var err error
-		if req, err = a.NewGETRequest("dir"); err != nil {
+		if res, err = d.DoGET(ctx, "dir", params); err != nil {
 			return nil, err
 		}
 	}
 
-	query = req.URL.Query()
-	query.Add("path", path)
-	for k, v := range params {
-		query.Add(k, v)
-	}
-	req.URL.RawQuery = query.Encode()
-
-	{
-		var err error
-		if cli, err = a.Authenticator.Client(); err != nil {
-			return nil, err
-		}
-	}
-
-	{
-		var err error
-		if res, err = cli.Do(req); err != nil {
-			return nil, err
-		}
+	if err := d.checkHTTPStatus(http.StatusOK, res); err != nil {
+		return nil, err
 	}
 
 	{
@@ -56,14 +41,6 @@ func (a *HDDirApi) GetDir(path string, params map[string]string) (*HiDriveObject
 		if body, err = io.ReadAll(res.Body); err != nil {
 			return nil, err
 		}
-	}
-
-	if res.StatusCode != http.StatusOK {
-		hdErr := &HiDriveError{}
-		if err := json.Unmarshal(body, hdErr); err != nil {
-			return nil, err
-		}
-		return nil, hdErr
 	}
 
 	hdObj := &HiDriveObject{}
@@ -76,38 +53,21 @@ func (a *HDDirApi) GetDir(path string, params map[string]string) (*HiDriveObject
 
 // CreateDir creates directory defined in the `path`.
 // This functions will not create all parent directories, they must exist.
-func (a *HDDirApi) CreateDir(path string) (*HiDriveObject, error) {
+func (d DirApi) CreateDir(ctx context.Context, params url.Values) (*HiDriveObject, error) {
 	var (
-		query url.Values
-		req   *http.Request
-		cli   *http.Client
-		res   *http.Response
-		body  []byte
+		res  *http.Response
+		body []byte
 	)
 
 	{
 		var err error
-		if req, err = a.NewPOSTRequest("dir"); err != nil {
+		if res, err = d.DoPOST(ctx, "dir", params, nil); err != nil {
 			return nil, err
 		}
 	}
 
-	query = req.URL.Query()
-	query.Add("path", path)
-	req.URL.RawQuery = query.Encode()
-
-	{
-		var err error
-		if cli, err = a.Authenticator.Client(); err != nil {
-			return nil, err
-		}
-	}
-
-	{
-		var err error
-		if res, err = cli.Do(req); err != nil {
-			return nil, err
-		}
+	if err := d.checkHTTPStatus(http.StatusCreated, res); err != nil {
+		return nil, err
 	}
 
 	{
@@ -115,14 +75,6 @@ func (a *HDDirApi) CreateDir(path string) (*HiDriveObject, error) {
 		if body, err = io.ReadAll(res.Body); err != nil {
 			return nil, err
 		}
-	}
-
-	if res.StatusCode != http.StatusCreated {
-		hdErr := &HiDriveError{}
-		if err := json.Unmarshal(body, hdErr); err != nil {
-			return nil, err
-		}
-		return nil, hdErr
 	}
 
 	hdObj := &HiDriveObject{}
@@ -134,70 +86,39 @@ func (a *HDDirApi) CreateDir(path string) (*HiDriveObject, error) {
 }
 
 // CreatePath creates directory defined in the `path` and all parent directories preceding it
-func (a *HDDirApi) CreatePath(path string) (*HiDriveObject, error) {
+func (d DirApi) CreatePath(ctx context.Context, params url.Values) (*HiDriveObject, error) {
+	path := params.Get("path")
+	if len(path) < 1 {
+		return nil, fmt.Errorf("path: %w", ErrShouldNotBeEmpty)
+	}
+
 	dirs := strings.Split(path, "/")
 	for k := range dirs[:len(dirs)-1] {
 		dir := fmt.Sprintf("/%s", strings.Join(dirs[1:k+1], "/"))
-		if _, err := a.GetDir(dir, map[string]string{"members": "none", "fields": "path"}); err == nil {
+		tmpp := NewParameters().SetMembers([]string{"none"}).SetFields([]string{"path"}).SetPath(dir)
+		if _, err := d.GetDir(ctx, tmpp.Values); err == nil {
 			continue
 		}
-		if _, err := a.CreateDir(dir); err != nil {
+		if _, err := d.CreateDir(ctx, NewParameters().SetPath(dir).Values); err != nil {
 			return nil, err
 		}
 	}
-
-	return a.CreateDir(path)
+	return d.CreateDir(ctx, NewParameters().SetPath(path).Values)
 }
 
 // DeleteDir deletes the directory defined in the `path`
-func (a *HDDirApi) DeleteDir(path string, recursive bool) error {
-	var (
-		query url.Values
-		req   *http.Request
-		cli   *http.Client
-		res   *http.Response
-		body  []byte
-	)
+func (d DirApi) DeleteDir(ctx context.Context, params url.Values) error {
+	var res *http.Response
 
 	{
 		var err error
-		if req, err = a.NewDELETERequest("dir"); err != nil {
+		if res, err = d.DoDELETE(ctx, "dir", params); err != nil {
 			return err
 		}
 	}
 
-	query = req.URL.Query()
-	query.Add("path", path)
-	query.Add("recursive", fmt.Sprint(recursive))
-	req.URL.RawQuery = query.Encode()
-
-	{
-		var err error
-		if cli, err = a.Authenticator.Client(); err != nil {
-			return err
-		}
-	}
-
-	{
-		var err error
-		if res, err = cli.Do(req); err != nil {
-			return err
-		}
-	}
-
-	{
-		var err error
-		if body, err = io.ReadAll(res.Body); err != nil {
-			return err
-		}
-	}
-
-	if res.StatusCode != http.StatusNoContent {
-		hdErr := &HiDriveError{}
-		if err := json.Unmarshal(body, hdErr); err != nil {
-			return err
-		}
-		return hdErr
+	if err := d.checkHTTPStatus(http.StatusNoContent, res); err != nil {
+		return err
 	}
 
 	return nil

@@ -1,27 +1,27 @@
 package go_hidrive
 
 import (
+	"context"
 	"fmt"
-	"testing"
-
 	"github.com/google/uuid"
+	"net/url"
+	"testing"
 )
 
-func TestHDDirApi_GetDir(t *testing.T) {
+func TestDirApi_GetDir(t *testing.T) {
 	type fields struct {
-		Authenticator *Authenticator
-		Endpoint      string
+		Api DirApi
 	}
 	type args struct {
-		path   string
-		params map[string]string
+		params url.Values
 	}
-
-	a, err := CreateTestAuthenticator()
+	client, err := createTestHTTPClient()
 	if err != nil {
-		t.Errorf("error setting up authenticator: %s", err.Error())
+		t.Errorf("error setting up HTTP client: %s", err.Error())
 		return
 	}
+	dirApi := NewDirApi(client, StratoHiDriveAPIV21)
+	ctx := context.Background()
 
 	tests := []struct {
 		name    string
@@ -35,12 +35,10 @@ func TestHDDirApi_GetDir(t *testing.T) {
 			wantErr: false,
 			want:    nil,
 			args: args{
-				path:   "/public",
-				params: map[string]string{"members": "none", "fields": "path"},
+				params: NewParameters().SetPath("/public").SetMembers([]string{"none"}).SetFields([]string{"path"}).Values,
 			},
 			fields: fields{
-				Authenticator: a,
-				Endpoint:      DefaultEndpointPrefix,
+				Api: dirApi,
 			},
 		},
 		{
@@ -48,64 +46,48 @@ func TestHDDirApi_GetDir(t *testing.T) {
 			wantErr: false,
 			want:    nil,
 			args: args{
-				path:   "/",
-				params: map[string]string{"members": "none", "fields": "path"},
+				params: NewParameters().SetPath("/").SetMembers([]string{"none"}).SetFields([]string{"path"}).Values,
 			},
-			fields: fields{
-				Authenticator: a,
-				Endpoint:      DefaultEndpointPrefix,
-			},
+			fields: fields{Api: dirApi},
 		},
 		{
 			name:    "test non-existent directory",
 			wantErr: true,
 			want:    nil,
 			args: args{
-				path:   "/some_dir_that_does_not_exist_jhsbcv8374r",
-				params: map[string]string{"members": "none", "fields": "path"},
+				params: NewParameters().SetPath("/some_dir_that_does_not_exist_jhsbcv8374r").SetMembers([]string{"none"}).SetFields([]string{"path"}).Values,
 			},
-			fields: fields{
-				Authenticator: a,
-				Endpoint:      DefaultEndpointPrefix,
-			},
+			fields: fields{Api: dirApi},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := &HDDirApi{
-				&HDApi{
-					Authenticator: tt.fields.Authenticator,
-					Endpoint:      tt.fields.Endpoint,
-				},
-			}
-			_, err := a.GetDir(tt.args.path, tt.args.params)
-			_ = a.DeleteDir(tt.args.path, false)
+			_, err := dirApi.GetDir(ctx, tt.args.params)
+			ddParams := NewParameters().SetPath(tt.args.params.Get("path")).SetRecursive(false).Values
+			_ = dirApi.DeleteDir(ctx, ddParams)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetDir() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			//if !reflect.DeepEqual(got, tt.want) {
-			//	t.Errorf("GetDir() got = %v, want %v", got, tt.want)
-			//}
 		})
 	}
 }
 
-func TestHDDirApi_DeleteDir(t *testing.T) {
+func TestDirApi_DeleteDir(t *testing.T) {
 	type fields struct {
-		Authenticator *Authenticator
-		Endpoint      string
+		Api DirApi
 	}
 	type args struct {
-		path      string
-		recursive bool
+		params url.Values
 	}
 
-	a, err := CreateTestAuthenticator()
+	client, err := createTestHTTPClient()
 	if err != nil {
-		t.Errorf("error setting up authenticator: %s", err.Error())
+		t.Errorf("error setting up HTTP client: %s", err.Error())
 		return
 	}
+	dirApi := NewDirApi(client, StratoHiDriveAPIV21)
+	ctx := context.Background()
 
 	tests := []struct {
 		name    string
@@ -117,44 +99,35 @@ func TestHDDirApi_DeleteDir(t *testing.T) {
 			name:    "test non-existent directory",
 			wantErr: true,
 			args: args{
-				path:      "/some_dir_that_does_not_exist_jhsbcv8374r",
-				recursive: false,
+				params: NewParameters().SetPath("/some_dir_that_does_not_exist_jhsbcv8374r").SetRecursive(false).Values,
 			},
-			fields: fields{
-				Authenticator: a,
-				Endpoint:      DefaultEndpointPrefix,
-			},
+			fields: fields{Api: dirApi},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := &HDDirApi{
-				&HDApi{
-					Authenticator: tt.fields.Authenticator,
-					Endpoint:      tt.fields.Endpoint,
-				},
-			}
-			if err := a.DeleteDir(tt.args.path, tt.args.recursive); (err != nil) != tt.wantErr {
+			if err := dirApi.DeleteDir(ctx, tt.args.params); (err != nil) != tt.wantErr {
 				t.Errorf("DeleteDir() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
 }
 
-func TestHDDirApi_CreateDir(t *testing.T) {
+func TestDirApi_CreateDir(t *testing.T) {
 	type fields struct {
-		Authenticator *Authenticator
-		Endpoint      string
+		Api DirApi
 	}
 	type args struct {
-		path string
+		params url.Values
 	}
 
-	a, err := CreateTestAuthenticator()
+	client, err := createTestHTTPClient()
 	if err != nil {
-		t.Errorf("error setting up authenticator: %s", err.Error())
+		t.Errorf("error setting up HTTP client: %s", err.Error())
 		return
 	}
+	dirApi := NewDirApi(client, StratoHiDriveAPIV21)
+	ctx := context.Background()
 
 	tests := []struct {
 		name    string
@@ -167,59 +140,45 @@ func TestHDDirApi_CreateDir(t *testing.T) {
 			name:    "test creating directory",
 			wantErr: false,
 			args: args{
-				path: fmt.Sprintf("/public/%s", uuid.New().String()),
+				params: NewParameters().SetPath(fmt.Sprintf("/public/%s", uuid.New().String())).Values,
 			},
-			fields: fields{
-				Authenticator: a,
-				Endpoint:      DefaultEndpointPrefix,
-			},
+			fields: fields{Api: dirApi},
 		},
 		{
 			name:    "test creating existing directory",
 			wantErr: true,
 			args: args{
-				path: "/public",
+				params: NewParameters().SetPath("/public").Values,
 			},
-			fields: fields{
-				Authenticator: a,
-				Endpoint:      DefaultEndpointPrefix,
-			},
+			fields: fields{Api: dirApi},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := &HDDirApi{
-				&HDApi{
-					Authenticator: tt.fields.Authenticator,
-					Endpoint:      tt.fields.Endpoint,
-				},
-			}
-			_, err := a.CreateDir(tt.args.path)
+			_, err := dirApi.CreateDir(ctx, tt.args.params)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateDir() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			//if !reflect.DeepEqual(got, tt.want) {
-			//	t.Errorf("CreateDir() got = %v, want %v", got, tt.want)
-			//}
 		})
 	}
 }
 
-func TestHDDirApi_CreatePath(t *testing.T) {
+func TestDirApi_CreatePath(t *testing.T) {
 	type fields struct {
-		Authenticator *Authenticator
-		Endpoint      string
+		Api DirApi
 	}
 	type args struct {
-		path string
+		params url.Values
 	}
 
-	a, err := CreateTestAuthenticator()
+	client, err := createTestHTTPClient()
 	if err != nil {
-		t.Errorf("error setting up authenticator: %s", err.Error())
+		t.Errorf("error setting up HTTP client: %s", err.Error())
 		return
 	}
+	dirApi := NewDirApi(client, StratoHiDriveAPIV21)
+	ctx := context.Background()
 
 	tests := []struct {
 		name    string
@@ -232,30 +191,18 @@ func TestHDDirApi_CreatePath(t *testing.T) {
 			name:    "test creating path",
 			wantErr: false,
 			args: args{
-				path: fmt.Sprintf("/public/%s/%s/%s", uuid.New().String(), uuid.New().String(), uuid.New().String()),
+				params: NewParameters().SetPath(fmt.Sprintf("/public/%s/%s/%s", uuid.New().String(), uuid.New().String(), uuid.New().String())).Values,
 			},
-			fields: fields{
-				Authenticator: a,
-				Endpoint:      DefaultEndpointPrefix,
-			},
+			fields: fields{Api: dirApi},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := &HDDirApi{
-				&HDApi{
-					Authenticator: tt.fields.Authenticator,
-					Endpoint:      tt.fields.Endpoint,
-				},
-			}
-			_, err := a.CreatePath(tt.args.path)
+			_, err := dirApi.CreatePath(ctx, tt.args.params)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreatePath() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			//if !reflect.DeepEqual(got, tt.want) {
-			//	t.Errorf("CreatePath() got = %v, want %v", got, tt.want)
-			//}
 		})
 	}
 }

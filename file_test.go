@@ -2,14 +2,15 @@ package go_hidrive
 
 import (
 	"bytes"
+	"context"
 	"fmt"
+	"github.com/google/uuid"
 	"io"
 	"math/rand"
+	"net/url"
 	"os"
 	"testing"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type ClosingBuffer struct {
@@ -20,20 +21,22 @@ func (c *ClosingBuffer) Close() (err error) {
 	return
 }
 
-func TestHDFileApi_UploadFile(t *testing.T) {
+func TestFileApi_UploadFile(t *testing.T) {
 	type fields struct {
-		HDApi *HDApi
+		Api FileApi
 	}
 	type args struct {
-		path     string
+		params   url.Values
 		fileBody io.ReadCloser
 	}
 
-	a, err := CreateTestAuthenticator()
+	client, err := createTestHTTPClient()
 	if err != nil {
-		t.Errorf("error setting up authenticator: %s", err.Error())
+		t.Errorf("error setting up HTTP client: %s", err.Error())
 		return
 	}
+	fileApi := NewFileApi(client, StratoHiDriveAPIV21)
+	ctx := context.Background()
 
 	tests := []struct {
 		name    string
@@ -43,11 +46,11 @@ func TestHDFileApi_UploadFile(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "upload random file to /public",
+			name:    "upload this file to /public",
 			want:    nil,
 			wantErr: false,
 			args: args{
-				path: fmt.Sprintf("/public/%s", uuid.New().String()),
+				params: NewParameters().SetFilePath(fmt.Sprintf("/public/%s", uuid.New().String())).Values,
 				fileBody: func() io.ReadCloser {
 					f, err := os.Open("go.mod")
 					if err != nil {
@@ -58,42 +61,36 @@ func TestHDFileApi_UploadFile(t *testing.T) {
 					return f
 				}(),
 			},
-			fields: fields{HDApi: &HDApi{
-				Authenticator: a,
-				Endpoint:      DefaultEndpointPrefix,
-			}},
+			fields: fields{Api: fileApi},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := &HDFileApi{
-				HDApi: tt.fields.HDApi,
-			}
-			_, err := f.UploadFile(tt.args.path, tt.args.fileBody)
+			_, err := fileApi.UploadFile(ctx, tt.args.params, tt.args.fileBody)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("UploadFile() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			//if !reflect.DeepEqual(got, tt.want) {
-			//	t.Errorf("UploadFile() got = %v, want %v", got, tt.want)
-			//}
 		})
 	}
 }
 
-func TestHDFileApi_DeleteFile(t *testing.T) {
+func TestFileApi_DeleteFile(t *testing.T) {
 	type fields struct {
-		HDApi *HDApi
+		Api FileApi
 	}
 	type args struct {
-		path string
+		params url.Values
 	}
 
-	a, err := CreateTestAuthenticator()
+	client, err := createTestHTTPClient()
 	if err != nil {
-		t.Errorf("error setting up authenticator: %s", err.Error())
+		t.Errorf("error setting up HTTP client: %s", err.Error())
 		return
 	}
+	fileApi := NewFileApi(client, StratoHiDriveAPIV21)
+	ctx := context.Background()
 
 	tests := []struct {
 		name    string
@@ -105,18 +102,15 @@ func TestHDFileApi_DeleteFile(t *testing.T) {
 			name:    "delete non-existent file",
 			wantErr: true,
 			args: args{
-				path: fmt.Sprintf("/public/%s", uuid.New().String()),
+				params: NewParameters().SetPath(fmt.Sprintf("/public/%s", uuid.New().String())).Values,
 			},
-			fields: fields{HDApi: &HDApi{
-				Authenticator: a,
-				Endpoint:      DefaultEndpointPrefix,
-			}},
+			fields: fields{Api: fileApi},
 		},
 		{
 			name:    "delete existing file",
 			wantErr: false,
 			args: args{
-				path: func() string {
+				params: NewParameters().SetPath(func() string {
 					buf := &ClosingBuffer{
 						&bytes.Buffer{},
 					}
@@ -125,32 +119,22 @@ func TestHDFileApi_DeleteFile(t *testing.T) {
 						rndByte := rand.Intn(127)
 						_ = buf.WriteByte(byte(rndByte))
 					}
-					f := &HDFileApi{
-						HDApi: &HDApi{
-							Authenticator: a,
-							Endpoint:      DefaultEndpointPrefix,
-						},
-					}
-					fname := fmt.Sprintf("/public/%s", uuid.New().String())
-					if _, err := f.UploadFile(fname, buf); err != nil {
+					path := fmt.Sprintf("/public/%s", uuid.New().String())
+					prm := NewParameters().SetFilePath(path).Values
+					if _, err := fileApi.UploadFile(ctx, prm, buf); err != nil {
 						return ""
 					}
 
-					return fname
-				}(),
+					return path
+				}()).Values,
 			},
-			fields: fields{HDApi: &HDApi{
-				Authenticator: a,
-				Endpoint:      DefaultEndpointPrefix,
-			}},
+			fields: fields{Api: fileApi},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := &HDFileApi{
-				HDApi: tt.fields.HDApi,
-			}
-			if err := f.DeleteFile(tt.args.path); (err != nil) != tt.wantErr {
+			if err := fileApi.DeleteFile(ctx, tt.args.params); (err != nil) != tt.wantErr {
 				t.Errorf("DeleteFile() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
