@@ -6,6 +6,12 @@ import (
 	"fmt"
 )
 
+/*
+HiDriveError - represents HiDrive JSON-encoded errors.
+
+Every time an API call receives non-OK code HiDrive also provides explanation in the response body.
+This response is converted into this type and returned as error on each method.
+*/
 type HiDriveError struct {
 	Code    json.Number `json:"code"`
 	Message string      `json:"msg"`
