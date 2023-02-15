@@ -280,7 +280,7 @@ func (s ShareApi) Invite(ctx context.Context, params url.Values) (*HiDriveShareI
 	}
 
 	obj := &HiDriveShareInviteResponse{}
-	if err := obj.UnmarshalJSON(body); err != nil {
+	if err := json.Unmarshal(body, obj); err != nil {
 		return nil, err
 	}
 

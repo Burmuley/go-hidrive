@@ -124,7 +124,3 @@ type HiDriveShareInviteResponse struct {
 	Done   []HiDriveShareInviteStatus `json:"done"`
 	Failed []HiDriveShareInviteStatus `json:"failed"`
 }
-
-func (s *HiDriveShareInviteResponse) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, s)
-}
