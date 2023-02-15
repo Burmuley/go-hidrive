@@ -72,7 +72,7 @@ func (d DirApi) GetDir(ctx context.Context, params url.Values) (*HiDriveObject, 
 		}
 	}
 
-	if err := d.checkHTTPStatus(http.StatusOK, res); err != nil {
+	if err := d.checkHTTPStatusError([]int{http.StatusOK}, res); err != nil {
 		return nil, err
 	}
 
@@ -132,7 +132,7 @@ func (d DirApi) CreateDir(ctx context.Context, params url.Values) (*HiDriveObjec
 		}
 	}
 
-	if err := d.checkHTTPStatus(http.StatusCreated, res); err != nil {
+	if err := d.checkHTTPStatusError([]int{http.StatusCreated}, res); err != nil {
 		return nil, err
 	}
 
@@ -218,7 +218,7 @@ func (d DirApi) DeleteDir(ctx context.Context, params url.Values) error {
 		}
 	}
 
-	if err := d.checkHTTPStatus(http.StatusNoContent, res); err != nil {
+	if err := d.checkHTTPStatusError([]int{http.StatusNoContent}, res); err != nil {
 		return err
 	}
 

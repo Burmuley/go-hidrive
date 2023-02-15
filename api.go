@@ -132,11 +132,11 @@ func (a Api) doHTTPRequest(ctx context.Context, method, uri string, params url.V
 	return res, nil
 }
 
-func (a Api) checkHTTPStatus(desiredCode int, res *http.Response) error {
+func (a Api) checkHTTPStatusError(okCodes []int, res *http.Response) error {
 	var err error
 	var body []byte
 
-	if res.StatusCode != desiredCode {
+	if !isItemInSlice(okCodes, res.StatusCode) {
 		hdErr := &HiDriveError{}
 		if body, err = io.ReadAll(res.Body); err != nil {
 			return err
