@@ -113,3 +113,14 @@ func (s *HiDriveShareObject) UnmarshalJSON(b []byte) error {
 	*s = HiDriveShareObject(defaultObject)
 	return nil
 }
+
+type HiDriveShareInviteStatus struct {
+	To      string `json:"to"`
+	Code    int    `json:"code"`
+	Message string `json:"msg"`
+}
+
+type HiDriveShareInviteResponse struct {
+	Done   []HiDriveShareInviteStatus `json:"done"`
+	Failed []HiDriveShareInviteStatus `json:"failed"`
+}

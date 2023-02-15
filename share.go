@@ -57,7 +57,7 @@ func (s ShareApi) GetShare(ctx context.Context, params url.Values) ([]*HiDriveSh
 		}
 	}
 
-	if err := s.checkHTTPStatus(http.StatusOK, res); err != nil {
+	if err := s.checkHTTPStatusError([]int{http.StatusOK}, res); err != nil {
 		return nil, err
 	}
 
@@ -120,7 +120,7 @@ func (s ShareApi) CreateShare(ctx context.Context, params url.Values) (*HiDriveS
 		}
 	}
 
-	if err := s.checkHTTPStatus(http.StatusCreated, res); err != nil {
+	if err := s.checkHTTPStatusError([]int{http.StatusCreated}, res); err != nil {
 		return nil, err
 	}
 
@@ -164,7 +164,7 @@ func (s ShareApi) DeleteShare(ctx context.Context, params url.Values) error {
 		}
 	}
 
-	if err := s.checkHTTPStatus(http.StatusNoContent, res); err != nil {
+	if err := s.checkHTTPStatusError([]int{http.StatusNoContent}, res); err != nil {
 		return err
 	}
 
@@ -208,7 +208,7 @@ func (s ShareApi) UpdateShare(ctx context.Context, params url.Values) (*HiDriveS
 		}
 	}
 
-	if err := s.checkHTTPStatus(http.StatusOK, res); err != nil {
+	if err := s.checkHTTPStatusError([]int{http.StatusOK}, res); err != nil {
 		return nil, err
 	}
 
@@ -221,6 +221,66 @@ func (s ShareApi) UpdateShare(ctx context.Context, params url.Values) (*HiDriveS
 
 	obj := &HiDriveShareObject{}
 	if err := obj.UnmarshalJSON(body); err != nil {
+		return nil, err
+	}
+
+	return obj, nil
+}
+
+/*
+Invite - Invite other people to a share via e-mail.
+
+Status codes:
+  - 200 - OK
+  - 207 - Multi-Status (body contains multiple status messages)
+  - 400 - Bad Request (e.g. invalid parameter)
+  - 401 - Unauthorized (no authentication)
+  - 403 - Forbidden (wrong password)
+  - 404 - Not Found (e.g. ID not existing)
+  - 410 - Gone
+  - 500 - Internal Error
+
+Supported parameters:
+  - id ([Parameters.SetId])
+  - path ([Parameters.SetPath])
+  - pid ([Parameters.SetPid])
+  - fields ([Parameters.SetFields])
+
+Returns [HiDriveShareInviteResponse] object.
+
+The returned object contains the keys `done` and `failed`. Each of these keys holds an array of objects describing
+successfully and unsuccessfully processed recipients. Each object holds at least the key `to`, which stores the
+recipient's e-mail address. Failure-objects contain an additional key `msg` which describes the encountered error.
+If all processed recipients share the same status code, the code will be returned as HTTP status code.
+Partial success or differing status codes are indicated by setting the HTTP status code to "207 Multi-Status".
+Failure- and done-objects will then contain the individual status of each processed recipient.
+*/
+func (s ShareApi) Invite(ctx context.Context, params url.Values) (*HiDriveShareInviteResponse, error) {
+	var (
+		res  *http.Response
+		body []byte
+	)
+
+	{
+		var err error
+		if res, err = s.doPOST(ctx, "share/invite", params, nil); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := s.checkHTTPStatusError([]int{http.StatusOK, http.StatusMultiStatus}, res); err != nil {
+		return nil, err
+	}
+
+	{
+		var err error
+		if body, err = io.ReadAll(res.Body); err != nil {
+			return nil, err
+		}
+	}
+
+	obj := &HiDriveShareInviteResponse{}
+	if err := json.Unmarshal(body, obj); err != nil {
 		return nil, err
 	}
 

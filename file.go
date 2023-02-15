@@ -58,7 +58,7 @@ func (f FileApi) GetFile(ctx context.Context, params url.Values) (io.ReadCloser,
 		}
 	}
 
-	if err := f.checkHTTPStatus(http.StatusOK, res); err != nil {
+	if err := f.checkHTTPStatusError([]int{http.StatusOK}, res); err != nil {
 		return nil, err
 	}
 
@@ -120,7 +120,7 @@ func (f FileApi) UploadFile(ctx context.Context, params url.Values, fileBody io.
 		}
 	}
 
-	if err := f.checkHTTPStatus(http.StatusCreated, res); err != nil {
+	if err := f.checkHTTPStatusError([]int{http.StatusCreated}, res); err != nil {
 		return nil, err
 	}
 
@@ -172,7 +172,7 @@ func (f FileApi) DeleteFile(ctx context.Context, params url.Values) error {
 		}
 	}
 
-	if err := f.checkHTTPStatus(http.StatusNoContent, res); err != nil {
+	if err := f.checkHTTPStatusError([]int{http.StatusNoContent}, res); err != nil {
 		return err
 	}
 
