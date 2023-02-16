@@ -44,7 +44,7 @@ Supported parameters:
   - pid ([Parameters.SetPid])
   - fields ([Parameters.SetFields])
 */
-func (s ShareApi) GetShare(ctx context.Context, params url.Values) ([]*HiDriveShareObject, error) {
+func (s ShareApi) GetShare(ctx context.Context, params url.Values) (*HiDriveShareObject, error) {
 	var (
 		res  *http.Response
 		body []byte
@@ -68,7 +68,7 @@ func (s ShareApi) GetShare(ctx context.Context, params url.Values) ([]*HiDriveSh
 		}
 	}
 
-	obj := make([]*HiDriveShareObject, 0)
+	obj := &HiDriveShareObject{}
 	if err := json.Unmarshal(body, &obj); err != nil {
 		return nil, err
 	}
