@@ -178,3 +178,77 @@ func (f FileApi) DeleteFile(ctx context.Context, params url.Values) error {
 
 	return nil
 }
+
+/*
+UpdateFile - Update a file by overwriting the target file with uploaded content.
+If the target file does not exist it will be created.
+
+If you wish to create a file without overwriting data, use [FileApi.UploadFile].
+
+Usage Details:
+
+The dir_id and dir parameters must be specified as query parameters of the URI.
+They refer to the file's target directory on the HiDrive storage, at least one of the parameters is mandatory.
+If both are given, dir_id addresses a directory and the value of dir is taken as a relative path to that directory.
+
+The size of the request body to upload is limited to 2147483648 bytes (2G). The size of the complete request, including
+header, and after possible decoding of chunked encoding and decompression is limited to 3206545408 bytes (3058MB).
+Larger requests are rejected with 413 Request Entity Too Large.
+
+As existence of the target file will be checked only after the upload is complete, the target file may have sprung into
+existence during the upload. To avoid losing the uploaded content in this case, the optional on_exist parameter can be
+set to "autoname". When set, the returned data will contain a name that differs from the provided name parameter.
+
+Status codes:
+  - 201 - Created
+  - 400 - Bad Request (e.g. invalid parameter)
+  - 401 - Unauthorized (password required)
+  - 403 - Forbidden (wrong password)
+  - 404 - Not Found (ID does not exist or given path is not shared).
+  - 409 - Conflict
+  - 413 - Request Entity Too Large
+  - 415 - Unsupported Media Type
+  - 422 - Unprocessable Entity (e.g. name too long)
+  - 500 - Internal Error
+  - 507 - Insufficient Storage
+
+Supported parameters:
+  - dir ([Parameters.SetDir])
+  - dir_id ([Parameters.SetDirId])
+  - name ([Parameters.SetName])
+  - mtime ([Parameters.SetMTime])
+  - parent_mtime ([Parameters.SetParentMTime])
+
+Returns [HiDriveObject] with information about uploaded file.
+*/
+func (f FileApi) UpdateFile(ctx context.Context, params url.Values, fileBody io.ReadCloser) (*HiDriveObject, error) {
+	var (
+		res  *http.Response
+		body []byte
+	)
+
+	{
+		var err error
+		if res, err = f.doPUT(ctx, "file", params, fileBody); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := f.checkHTTPStatusError([]int{http.StatusCreated}, res); err != nil {
+		return nil, err
+	}
+
+	{
+		var err error
+		if body, err = io.ReadAll(res.Body); err != nil {
+			return nil, err
+		}
+	}
+
+	hdObj := &HiDriveObject{}
+	if err := hdObj.UnmarshalJSON(body); err != nil {
+		return nil, err
+	}
+
+	return hdObj, nil
+}
