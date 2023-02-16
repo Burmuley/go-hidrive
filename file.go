@@ -234,7 +234,7 @@ func (f FileApi) UpdateFile(ctx context.Context, params url.Values, fileBody io.
 		}
 	}
 
-	if err := f.checkHTTPStatusError([]int{http.StatusCreated}, res); err != nil {
+	if err := f.checkHTTPStatusError([]int{http.StatusOK}, res); err != nil {
 		return nil, err
 	}
 
