@@ -313,7 +313,7 @@ Supported parameters:
   - ttl ([Parameters.SetTTL])
   - type - always set by the method to value `file`
 */
-func (s ShareApi) CreateShareLink(ctx context.Context, params url.Values, fileBody io.ReadCloser) (*HiDriveShareObject, error) {
+func (s ShareApi) CreateShareLink(ctx context.Context, params url.Values) (*HiDriveShareObject, error) {
 	var (
 		res  *http.Response
 		body []byte
@@ -322,7 +322,7 @@ func (s ShareApi) CreateShareLink(ctx context.Context, params url.Values, fileBo
 	params.Set("type", "file")
 	{
 		var err error
-		if res, err = s.doPOST(ctx, "sharelink", params, fileBody); err != nil {
+		if res, err = s.doPOST(ctx, "sharelink", params, nil); err != nil {
 			return nil, err
 		}
 	}
@@ -417,7 +417,7 @@ Supported parameters:
   - password ([Parameters.SetPassword])
   - ttl ([Parameters.SetTTL])
 */
-func (s ShareApi) UpdateShareLink(ctx context.Context, params url.Values, fileBody io.ReadCloser) (*HiDriveShareObject, error) {
+func (s ShareApi) UpdateShareLink(ctx context.Context, params url.Values) (*HiDriveShareObject, error) {
 	var (
 		res  *http.Response
 		body []byte
@@ -425,7 +425,7 @@ func (s ShareApi) UpdateShareLink(ctx context.Context, params url.Values, fileBo
 
 	{
 		var err error
-		if res, err = s.doPUT(ctx, "sharelink", params, fileBody); err != nil {
+		if res, err = s.doPUT(ctx, "sharelink", params, nil); err != nil {
 			return nil, err
 		}
 	}
