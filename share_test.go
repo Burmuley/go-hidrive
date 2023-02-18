@@ -12,9 +12,9 @@ import (
 	"testing"
 )
 
-func TestShareApi_CreateShare(t *testing.T) {
+func TestShare_Create(t *testing.T) {
 	type fields struct {
-		Api Api
+		Api Share
 	}
 	type args struct {
 		params url.Values
@@ -25,14 +25,14 @@ func TestShareApi_CreateShare(t *testing.T) {
 		t.Errorf("error setting up HTTP client: %s", err.Error())
 		return
 	}
-	shareApi := NewApi(client, StratoHiDriveAPIV21)
+	shareApi := NewShare(client, StratoHiDriveAPIV21)
 	ctx := context.Background()
 
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *HiDriveShareObject
+		want    *ShareObject
 		wantErr bool
 	}{
 		{
@@ -46,19 +46,17 @@ func TestShareApi_CreateShare(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := ShareApi{
-				Api: tt.fields.Api,
-			}
-			_, err := s.CreateShare(ctx, tt.args.params)
+			s := tt.fields.Api
+			_, err := s.Create(ctx, tt.args.params)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("CreateShare() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Create() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 		})
 	}
 }
 
-func TestShareApi_Invite(t *testing.T) {
+func TestShare_Invite(t *testing.T) {
 	type fields struct {
 		Api Api
 	}
@@ -72,30 +70,29 @@ func TestShareApi_Invite(t *testing.T) {
 		t.Errorf("error setting up HTTP client: %s", err.Error())
 		return
 	}
-	shareApi := NewShareApi(client, StratoHiDriveAPIV21)
-	dirAPi := NewDirApi(client, StratoHiDriveAPIV21)
+	shareApi := NewShare(client, StratoHiDriveAPIV21)
+	dirAPi := NewDir(client, StratoHiDriveAPIV21)
 	ctx := context.Background()
 
 	testFilePath := fmt.Sprintf("/public/test_dir_for_sharing_%s", uuid.New().String())
-	var dirObj *HiDriveObject
-	var shareObj *HiDriveShareObject
+	var dirObj *Object
+	var shareObj *ShareObject
 
 	{
 		var err error
-		if dirObj, err = dirAPi.CreateDir(ctx, NewParameters().SetPath(testFilePath).Values); err != nil {
-			t.Errorf("CreateDir() error = %v", err)
+		if dirObj, err = dirAPi.Create(ctx, NewParameters().SetPath(testFilePath).Values); err != nil {
+			t.Errorf("Create() error = %v", err)
 			return
 		}
 	}
 
 	{
 		var err error
-		if shareObj, err = shareApi.CreateShare(ctx, NewParameters().SetPath(dirObj.Path).SetPassword("test@123!").Values); err != nil {
-			t.Errorf("CreateShare() error = %v", err)
+		if shareObj, err = shareApi.Create(ctx, NewParameters().SetPath(dirObj.Path).SetPassword("test@123!").Values); err != nil {
+			t.Errorf("Create() error = %v", err)
 			return
 		}
 	}
-	fmt.Println(shareObj.ID)
 
 	{
 		var err error
@@ -112,25 +109,9 @@ func TestShareApi_Invite(t *testing.T) {
 
 	{
 		var err error
-		if err = dirAPi.DeleteDir(ctx, NewParameters().SetPath(testFilePath).Values); err != nil {
-			t.Errorf("DeleteDir() error = %v", err)
+		if err = dirAPi.Delete(ctx, NewParameters().SetPath(testFilePath).Values); err != nil {
+			t.Errorf("Delete() error = %v", err)
 			return
 		}
 	}
-
-	//for _, tt := range tests {
-	//	t.Run(tt.name, func(t *testing.T) {
-	//		s := ShareApi{
-	//			Api: tt.fields.Api,
-	//		}
-	//		_, err := s.Invite(tt.args.ctx, tt.args.params)
-	//		if (err != nil) != tt.wantErr {
-	//			t.Errorf("Invite() error = %v, wantErr %v", err, tt.wantErr)
-	//			return
-	//		}
-	//		//if !reflect.DeepEqual(got, tt.want) {
-	//		//	t.Errorf("Invite() got = %v, want %v", got, tt.want)
-	//		//}
-	//	})
-	//}
 }

@@ -26,31 +26,32 @@ func (t *Time) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// HiDriveObject represents HiDrive object - directory or file
-type HiDriveObject struct {
-	Path         string           `json:"path"`
-	Type         string           `json:"type"`
-	ID           string           `json:"id"`
-	ParentID     string           `json:"parent_id"`
-	Name         string           `json:"name"`
-	Size         int64            `json:"size"`
-	MemberCount  int64            `json:"nmembers"`
-	MTime        Time             `json:"mtime"`
-	CTime        Time             `json:"ctime"`
-	MetaHash     string           `json:"mhash"`
-	MetaOnlyHash string           `json:"mohash"`
-	NHash        string           `json:"nhash"`
-	CHash        string           `json:"chash"`
-	Teamfolder   bool             `json:"teamfolder"`
-	Readable     bool             `json:"readable"`
-	Writable     bool             `json:"writable"`
-	Shareable    bool             `json:"shareable"`
-	MIMEType     string           `json:"mime_type"`
-	Members      []*HiDriveObject `json:"members"`
+// Object represents HiDrive object - directory or file
+type Object struct {
+	Path         string         `json:"path"`
+	Type         string         `json:"type"`
+	ID           string         `json:"id"`
+	ParentID     string         `json:"parent_id"`
+	Name         string         `json:"name"`
+	Size         int64          `json:"size"`
+	MemberCount  int64          `json:"nmembers"`
+	Members      []*Object      `json:"members"`
+	MTime        Time           `json:"mtime"`
+	CTime        Time           `json:"ctime"`
+	MetaHash     string         `json:"mhash"`
+	MetaOnlyHash string         `json:"mohash"`
+	NHash        string         `json:"nhash"`
+	CHash        string         `json:"chash"`
+	Teamfolder   bool           `json:"teamfolder"`
+	Readable     bool           `json:"readable"`
+	Writable     bool           `json:"writable"`
+	Shareable    bool           `json:"shareable"`
+	MIMEType     string         `json:"mime_type"`
+	RShare       []*ShareObject `json:"rshare"`
 }
 
-func (h *HiDriveObject) UnmarshalJSON(b []byte) error {
-	type HiDriveObjectAlias HiDriveObject
+func (h *Object) UnmarshalJSON(b []byte) error {
+	type HiDriveObjectAlias Object
 	defaultObject := HiDriveObjectAlias{
 		Size:        -1,
 		MemberCount: -1,
@@ -65,12 +66,12 @@ func (h *HiDriveObject) UnmarshalJSON(b []byte) error {
 		defaultObject.Name = name
 	}
 
-	*h = HiDriveObject(defaultObject)
+	*h = Object(defaultObject)
 	return nil
 }
 
-// HiDriveShareObject represents HiDrive Share object
-type HiDriveShareObject struct {
+// ShareObject represents HiDrive Share object
+type ShareObject struct {
 	ID           string `json:"id"`
 	Path         string `json:"path"`
 	Status       string `json:"status"`
@@ -95,8 +96,8 @@ type HiDriveShareObject struct {
 	Writable     bool   `json:"writable"`
 }
 
-func (s *HiDriveShareObject) UnmarshalJSON(b []byte) error {
-	type HiDriveShareObjectAlias HiDriveShareObject
+func (s *ShareObject) UnmarshalJSON(b []byte) error {
+	type HiDriveShareObjectAlias ShareObject
 	defaultObject := HiDriveShareObjectAlias{
 		Size:      -1,
 		TTL:       -1,
@@ -110,17 +111,17 @@ func (s *HiDriveShareObject) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	*s = HiDriveShareObject(defaultObject)
+	*s = ShareObject(defaultObject)
 	return nil
 }
 
-type HiDriveShareInviteStatus struct {
+type ShareInviteStatus struct {
 	To      string `json:"to"`
 	Code    int    `json:"code"`
 	Message string `json:"msg"`
 }
 
-type HiDriveShareInviteResponse struct {
-	Done   []HiDriveShareInviteStatus `json:"done"`
-	Failed []HiDriveShareInviteStatus `json:"failed"`
+type ShareInviteResponse struct {
+	Done   []ShareInviteStatus `json:"done"`
+	Failed []ShareInviteStatus `json:"failed"`
 }

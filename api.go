@@ -2,7 +2,7 @@
 Package go_hidrive is a simple client SDK library for HiDrive cloud storage
 (mainly provided by [Strato](https://www.strato.de/cloud-speicher/) provider)
 
-Currently, the following implementation are available: [DirApi], [FileApi] and [ShareApi].
+Currently, the following implementation are available: [Dir], [File] and [Share].
 
 All methods accept url.Values as a set of request parameters.
 You can also use [Parameters] objects to simplify parameters gathering required for request.
@@ -29,9 +29,9 @@ Example reading file from HiDrive:
 		}
 
 		client := oauth2config.Client(context.Background(), token)
-		fileApi := hidrive.NewFileApi(client, StratoHiDriveAPIV21)
+		fileApi := hidrive.NewFile(client, StratoHiDriveAPIV21)
 
-		rdr, err := fileApi.GetFile(context.Background(), NewParameters().SetPath("/public/test_file.txt").Values)
+		rdr, err := fileApi.Get(context.Background(), NewParameters().SetPath("/public/test_file.txt").Values)
 
 		if err != nil {
 			fmt.Println(err)
@@ -93,23 +93,27 @@ func (a Api) newHTTPRequest(ctx context.Context, method, uri string, r io.Reader
 	return http.NewRequestWithContext(ctx, method, strings.Join([]string{a.APIEndpoint, uri}, "/"), r)
 }
 
-func (a Api) doGET(ctx context.Context, uri string, params url.Values) (*http.Response, error) {
-	return a.doHTTPRequest(ctx, "GET", uri, params, nil)
+func (a Api) doGET(ctx context.Context, uri string, params url.Values, okCodes []int) (*http.Response, error) {
+	return a.doHTTPRequest(ctx, "GET", uri, params, okCodes, nil)
 }
 
-func (a Api) doDELETE(ctx context.Context, uri string, params url.Values) (*http.Response, error) {
-	return a.doHTTPRequest(ctx, "DELETE", uri, params, nil)
+func (a Api) doDELETE(ctx context.Context, uri string, params url.Values, okCodes []int) (*http.Response, error) {
+	return a.doHTTPRequest(ctx, "DELETE", uri, params, okCodes, nil)
 }
 
-func (a Api) doPOST(ctx context.Context, uri string, params url.Values, body io.ReadCloser) (*http.Response, error) {
-	return a.doHTTPRequest(ctx, "POST", uri, params, body)
+func (a Api) doPOST(ctx context.Context, uri string, params url.Values, okCodes []int, body io.ReadCloser) (*http.Response, error) {
+	return a.doHTTPRequest(ctx, "POST", uri, params, okCodes, body)
 }
 
-func (a Api) doPUT(ctx context.Context, uri string, params url.Values, body io.ReadCloser) (*http.Response, error) {
-	return a.doHTTPRequest(ctx, "PUT", uri, params, body)
+func (a Api) doPUT(ctx context.Context, uri string, params url.Values, okCodes []int, body io.ReadCloser) (*http.Response, error) {
+	return a.doHTTPRequest(ctx, "PUT", uri, params, okCodes, body)
 }
 
-func (a Api) doHTTPRequest(ctx context.Context, method, uri string, params url.Values, body io.ReadCloser) (*http.Response, error) {
+func (a Api) doPATCH(ctx context.Context, uri string, params url.Values, okCodes []int, body io.ReadCloser) (*http.Response, error) {
+	return a.doHTTPRequest(ctx, "PATCH", uri, params, okCodes, body)
+}
+
+func (a Api) doHTTPRequest(ctx context.Context, method, uri string, params url.Values, okCodes []int, body io.ReadCloser) (*http.Response, error) {
 	var (
 		req *http.Request
 		res *http.Response
@@ -131,6 +135,13 @@ func (a Api) doHTTPRequest(ctx context.Context, method, uri string, params url.V
 		}
 	}
 
+	{
+		var err error
+		if err = a.checkHTTPStatusError(okCodes, res); err != nil {
+			return nil, err
+		}
+	}
+
 	return res, nil
 }
 
@@ -139,7 +150,7 @@ func (a Api) checkHTTPStatusError(okCodes []int, res *http.Response) error {
 	var body []byte
 
 	if !isItemInSlice(okCodes, res.StatusCode) {
-		hdErr := &HiDriveError{}
+		hdErr := &Error{}
 		if body, err = io.ReadAll(res.Body); err != nil {
 			return err
 		}
