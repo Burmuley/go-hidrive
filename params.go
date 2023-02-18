@@ -26,6 +26,9 @@ Can be used in the following methods:
   - [File.Delete]
   - [Share.Get]
   - [Share.Create]
+  - [Sharelink.Create]
+  - [Meta.Get]
+  - [Meta.Update]
 */
 func (p *Parameters) SetPath(path string) *Parameters {
 	p.Set("path", path)
@@ -46,6 +49,9 @@ Can be used in the following methods:
   - [File.Delete]
   - [Share.Get]
   - [Share.Create]
+  - [Sharelink.Create]
+  - [Meta.Get]
+  - [Meta.Update]
 */
 func (p *Parameters) SetPid(pid string) *Parameters {
 	p.Set("pid", pid)
@@ -98,6 +104,8 @@ Therefore, it is recommended to use a "need to know" approach instead of "get al
 Can be used in the following methods:
   - [Dir.Get]
   - [Share.Get]
+  - [Sharelink.Get]
+  - [Meta.Get]
 
 Valid values for [Dir.Get]:
   - category                - string    - object category (audio, image, etc.)
@@ -238,6 +246,7 @@ to be set after the operation.
 Can be used in the following methods:
   - [Dir.Create]
   - [File.Upload]
+  - [Meta.Update]
 */
 func (p *Parameters) SetMTime(t time.Time) *Parameters {
 	timeStr := fmt.Sprint(t.Unix())
@@ -352,6 +361,8 @@ value permissible.
 
 Can be used in the following methods:
   - [Share.Create]
+  - [Sharelink.Create]
+  - [Sharelink.Update]
 */
 func (p *Parameters) SetMaxCount(count int) *Parameters {
 	p.Set("maxcount", fmt.Sprint(count))
@@ -366,6 +377,8 @@ This parameter must be omitted for encrypted shares which require salt, share_ac
 
 Can be used in the following methods:
   - [Share.Create]
+  - [Sharelink.Create]
+  - [Sharelink.Update]
 */
 func (p *Parameters) SetPassword(password string) *Parameters {
 	p.Set("password", password)
@@ -392,6 +405,8 @@ A positive number defining seconds from now. Not specifying a value sets ttl to 
 
 Can be used in the following methods:
   - [Share.Create]
+  - [Sharelink.Create]
+  - [Sharelink.Update]
 */
 func (p *Parameters) SetTTL(ttl uint) *Parameters {
 	p.Set("ttl", fmt.Sprint(ttl))
@@ -444,6 +459,10 @@ SetId - adds "id" parameter to the request - a share id as returned by [Share.Ge
 
 Can be used in the following methods:
   - [Share.Create]
+  - [Sharelink.Get]
+  - [Sharelink.Create]
+  - [Sharelink.Update]
+  - [Sharelink.Delete]
 */
 func (p *Parameters) SetId(id string) *Parameters {
 	p.Set("id", id)

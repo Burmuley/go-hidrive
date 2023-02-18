@@ -49,13 +49,13 @@ Supported parameters:
 Returns an io.ReadCloser object to read file contents using standard Go mechanisms.
 */
 func (f File) Get(ctx context.Context, params url.Values) (io.ReadCloser, error) {
-	var res *http.Response
+	var (
+		res *http.Response
+		err error
+	)
 
-	{
-		var err error
-		if res, err = f.doGET(ctx, "file", params, []int{http.StatusOK}); err != nil {
-			return nil, err
-		}
+	if res, err = f.doGET(ctx, "file", params, []int{http.StatusOK}); err != nil {
+		return nil, err
 	}
 
 	return res.Body, nil
@@ -105,30 +105,20 @@ Returns [Object] with information about uploaded file.
 */
 func (f File) Upload(ctx context.Context, params url.Values, fileBody io.ReadCloser) (*Object, error) {
 	var (
-		res  *http.Response
-		body []byte
+		res *http.Response
+		err error
 	)
 
-	{
-		var err error
-		if res, err = f.doPOST(ctx, "file", params, []int{http.StatusCreated}, fileBody); err != nil {
-			return nil, err
-		}
-	}
-
-	{
-		var err error
-		if body, err = io.ReadAll(res.Body); err != nil {
-			return nil, err
-		}
-	}
-
-	hdObj := &Object{}
-	if err := hdObj.UnmarshalJSON(body); err != nil {
+	if res, err = f.doPOST(ctx, "file", params, []int{http.StatusCreated}, fileBody); err != nil {
 		return nil, err
 	}
 
-	return hdObj, nil
+	obj := &Object{}
+	if err := f.unmarshalBody(res, obj); err != nil {
+		return nil, err
+	}
+
+	return obj, nil
 }
 
 /*
@@ -205,28 +195,18 @@ Returns [Object] with information about uploaded file.
 */
 func (f File) Update(ctx context.Context, params url.Values, fileBody io.ReadCloser) (*Object, error) {
 	var (
-		res  *http.Response
-		body []byte
+		res *http.Response
+		err error
 	)
 
-	{
-		var err error
-		if res, err = f.doPUT(ctx, "file", params, []int{http.StatusOK}, fileBody); err != nil {
-			return nil, err
-		}
-	}
-
-	{
-		var err error
-		if body, err = io.ReadAll(res.Body); err != nil {
-			return nil, err
-		}
-	}
-
-	hdObj := &Object{}
-	if err := hdObj.UnmarshalJSON(body); err != nil {
+	if res, err = f.doPUT(ctx, "file", params, []int{http.StatusOK}, fileBody); err != nil {
 		return nil, err
 	}
 
-	return hdObj, nil
+	obj := &Object{}
+	if err := f.unmarshalBody(res, obj); err != nil {
+		return nil, err
+	}
+
+	return obj, nil
 }

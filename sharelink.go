@@ -2,8 +2,6 @@ package go_hidrive
 
 import (
 	"context"
-	"encoding/json"
-	"io"
 	"net/http"
 	"net/url"
 )
@@ -21,13 +19,13 @@ NewSharelink - create new instance of Sharelink.
 Accepts http.Client and API endpoint as input parameters.
 If `endpoint` is empty string, then default `StratoHiDriveAPIV21` value is used.
 */
-func NewSharelink(client *http.Client, endpoint string) Share {
+func NewSharelink(client *http.Client, endpoint string) Sharelink {
 	api := NewApi(client, endpoint)
-	return Share{api}
+	return Sharelink{api}
 }
 
 /*
-CreateShareLink - create a new sharelink for a given file.
+Create - create a new sharelink for a given file.
 
 Both, the "pid" and "path" parameters refer to the file, at least one of them is mandatory.
 If both are given, `pid` addresses a parent directory, and the value of `path` is a relative path to the actual file.
@@ -52,29 +50,19 @@ Supported parameters:
   - ttl ([Parameters.SetTTL])
   - type - always set by the method to value `file`
 */
-func (s Sharelink) CreateShareLink(ctx context.Context, params url.Values) (*ShareObject, error) {
+func (sl Sharelink) Create(ctx context.Context, params url.Values) (*ShareObject, error) {
 	var (
-		res  *http.Response
-		body []byte
+		res *http.Response
+		err error
 	)
 
 	params.Set("type", "file")
-	{
-		var err error
-		if res, err = s.doPOST(ctx, "sharelink", params, []int{http.StatusCreated}, nil); err != nil {
-			return nil, err
-		}
-	}
-
-	{
-		var err error
-		if body, err = io.ReadAll(res.Body); err != nil {
-			return nil, err
-		}
+	if res, err = sl.doPOST(ctx, "sharelink", params, []int{http.StatusCreated}, nil); err != nil {
+		return nil, err
 	}
 
 	obj := &ShareObject{}
-	if err := json.Unmarshal(body, obj); err != nil {
+	if err := sl.unmarshalBody(res, obj); err != nil {
 		return nil, err
 	}
 
@@ -82,7 +70,7 @@ func (s Sharelink) CreateShareLink(ctx context.Context, params url.Values) (*Sha
 }
 
 /*
-GetShareLink - if no "id" parameter is given, a list of all sharelink objects of the user is returned.
+Get - if no "id" parameter is given, a list of all sharelink objects of the user is returned.
 With a given "id" only the corresponding `sharelink` object is returned, if that exists.
 
 Status codes:
@@ -97,28 +85,18 @@ Supported parameters:
   - id ([Parameters.SetId])
   - fields ([Parameters.SetFields])
 */
-func (s Sharelink) GetShareLink(ctx context.Context, params url.Values) (*ShareObject, error) {
+func (sl Sharelink) Get(ctx context.Context, params url.Values) (*ShareObject, error) {
 	var (
-		res  *http.Response
-		body []byte
+		res *http.Response
+		err error
 	)
 
-	{
-		var err error
-		if res, err = s.doGET(ctx, "sharelink", params, []int{http.StatusOK}); err != nil {
-			return nil, err
-		}
-	}
-
-	{
-		var err error
-		if body, err = io.ReadAll(res.Body); err != nil {
-			return nil, err
-		}
+	if res, err = sl.doGET(ctx, "sharelink", params, []int{http.StatusOK}); err != nil {
+		return nil, err
 	}
 
 	obj := &ShareObject{}
-	if err := json.Unmarshal(body, obj); err != nil {
+	if err := sl.unmarshalBody(res, obj); err != nil {
 		return nil, err
 	}
 
@@ -126,7 +104,7 @@ func (s Sharelink) GetShareLink(ctx context.Context, params url.Values) (*ShareO
 }
 
 /*
-UpdateShareLink - update values for a given `sharelink` (not available for all tariffs).
+Update - update values for a given `sharelink` (not available for all tariffs).
 
 Specific values might be limited due to package-feature settings:
   - The password protection feature is not available in all tariffs.
@@ -148,28 +126,18 @@ Supported parameters:
   - password ([Parameters.SetPassword])
   - ttl ([Parameters.SetTTL])
 */
-func (s Sharelink) UpdateShareLink(ctx context.Context, params url.Values) (*ShareObject, error) {
+func (sl Sharelink) Update(ctx context.Context, params url.Values) (*ShareObject, error) {
 	var (
-		res  *http.Response
-		body []byte
+		res *http.Response
+		err error
 	)
 
-	{
-		var err error
-		if res, err = s.doPUT(ctx, "sharelink", params, []int{http.StatusOK}, nil); err != nil {
-			return nil, err
-		}
-	}
-
-	{
-		var err error
-		if body, err = io.ReadAll(res.Body); err != nil {
-			return nil, err
-		}
+	if res, err = sl.doPUT(ctx, "sharelink", params, []int{http.StatusOK}, nil); err != nil {
+		return nil, err
 	}
 
 	obj := &ShareObject{}
-	if err := json.Unmarshal(body, obj); err != nil {
+	if err := sl.unmarshalBody(res, obj); err != nil {
 		return nil, err
 	}
 
@@ -177,7 +145,7 @@ func (s Sharelink) UpdateShareLink(ctx context.Context, params url.Values) (*Sha
 }
 
 /*
-DeleteShareLink - remove `sharelink`.
+Delete - remove `sharelink`.
 
 Status codes:
   - 204 - No Content
@@ -190,30 +158,10 @@ Status codes:
 Supported parameters:
   - id ([Parameters.SetId])
 */
-func (s Sharelink) DeleteShareLink(ctx context.Context, params url.Values) (*ShareObject, error) {
-	var (
-		res  *http.Response
-		body []byte
-	)
-
-	{
-		var err error
-		if res, err = s.doDELETE(ctx, "sharelink", params, []int{http.StatusNoContent}); err != nil {
-			return nil, err
-		}
+func (sl Sharelink) Delete(ctx context.Context, params url.Values) error {
+	if _, err := sl.doDELETE(ctx, "sharelink", params, []int{http.StatusNoContent}); err != nil {
+		return err
 	}
 
-	{
-		var err error
-		if body, err = io.ReadAll(res.Body); err != nil {
-			return nil, err
-		}
-	}
-
-	obj := &ShareObject{}
-	if err := json.Unmarshal(body, obj); err != nil {
-		return nil, err
-	}
-
-	return obj, nil
+	return nil
 }

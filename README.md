@@ -11,8 +11,17 @@ You can also use `Parameters` objects to simplify parameters gathering required 
 Example reading file from HiDrive:
 
 ```go
-import "golang.org/x/oauth2"
-import hidrive "github.com/Burmuley/go-hidrive"
+package main
+
+import (
+	"log"
+	"context"
+	"io"
+	"fmt"
+
+	"golang.org/x/oauth2"
+	hidrive "github.com/Burmuley/go-hidrive"
+)
 
 func main() {
     oauth2config := oauth2.Config{
@@ -31,20 +40,19 @@ func main() {
     }
 
     client := oauth2config.Client(context.Background(), token)
-    fileApi := hidrive.NewFileApi(client, StratoHiDriveAPIV21)
+    fileApi := hidrive.NewFile(client, hidrive.StratoHiDriveAPIV21)
 
-    rdr, err := fileApi.GetFile(context.Background(), NewParameters().SetPath("/public/test_file.txt").Values)
+    rdr, err := fileApi.Get(context.Background(), hidrive.NewParameters().SetPath("/public/test_file.txt").Values)
 
     if err != nil {
-        fmt.Println(err)
-        return
+        log.Fatal(err)
     }
-	
+
     contents, err := io.ReadAll(rdr)
     if err != nil {
-        fmt.Println(err)
-        return
+        log.Fatal(err)
     }
+	
     fmt.Println(contents)
 }
 ```
