@@ -2,8 +2,6 @@ package go_hidrive
 
 import (
 	"context"
-	"encoding/json"
-	"io"
 	"net/http"
 	"net/url"
 )
@@ -46,26 +44,16 @@ Supported parameters:
 */
 func (s Share) Get(ctx context.Context, params url.Values) (*ShareObject, error) {
 	var (
-		res  *http.Response
-		body []byte
+		res *http.Response
+		err error
 	)
 
-	{
-		var err error
-		if res, err = s.doGET(ctx, "share", params, []int{http.StatusOK}); err != nil {
-			return nil, err
-		}
-	}
-
-	{
-		var err error
-		if body, err = io.ReadAll(res.Body); err != nil {
-			return nil, err
-		}
+	if res, err = s.doGET(ctx, "share", params, []int{http.StatusOK}); err != nil {
+		return nil, err
 	}
 
 	obj := &ShareObject{}
-	if err := json.Unmarshal(body, &obj); err != nil {
+	if err := s.unmarshalBody(res, obj); err != nil {
 		return nil, err
 	}
 
@@ -105,31 +93,20 @@ Supported parameters:
 */
 func (s Share) Create(ctx context.Context, params url.Values) (*ShareObject, error) {
 	var (
-		res  *http.Response
-		body []byte
+		res *http.Response
+		err error
 	)
 
-	{
-		var err error
-		if res, err = s.doPOST(ctx, "share", params, []int{http.StatusCreated}, nil); err != nil {
-			return nil, err
-		}
-	}
-
-	{
-		var err error
-		if body, err = io.ReadAll(res.Body); err != nil {
-			return nil, err
-		}
+	if res, err = s.doPOST(ctx, "share", params, []int{http.StatusCreated}, nil); err != nil {
+		return nil, err
 	}
 
 	obj := &ShareObject{}
-	if err := obj.UnmarshalJSON(body); err != nil {
+	if err := s.unmarshalBody(res, obj); err != nil {
 		return nil, err
 	}
 
 	return obj, nil
-
 }
 
 /*
@@ -180,26 +157,16 @@ Supported parameters:
 */
 func (s Share) Update(ctx context.Context, params url.Values) (*ShareObject, error) {
 	var (
-		res  *http.Response
-		body []byte
+		res *http.Response
+		err error
 	)
 
-	{
-		var err error
-		if res, err = s.doPUT(ctx, "share", params, []int{http.StatusOK}, nil); err != nil {
-			return nil, err
-		}
-	}
-
-	{
-		var err error
-		if body, err = io.ReadAll(res.Body); err != nil {
-			return nil, err
-		}
+	if res, err = s.doPUT(ctx, "share", params, []int{http.StatusOK}, nil); err != nil {
+		return nil, err
 	}
 
 	obj := &ShareObject{}
-	if err := obj.UnmarshalJSON(body); err != nil {
+	if err := s.unmarshalBody(res, obj); err != nil {
 		return nil, err
 	}
 
@@ -236,26 +203,16 @@ Failure- and done-objects will then contain the individual status of each proces
 */
 func (s Share) Invite(ctx context.Context, params url.Values) (*ShareInviteResponse, error) {
 	var (
-		res  *http.Response
-		body []byte
+		res *http.Response
+		err error
 	)
 
-	{
-		var err error
-		if res, err = s.doPOST(ctx, "share/invite", params, []int{http.StatusOK, http.StatusMultiStatus}, nil); err != nil {
-			return nil, err
-		}
-	}
-
-	{
-		var err error
-		if body, err = io.ReadAll(res.Body); err != nil {
-			return nil, err
-		}
+	if res, err = s.doPOST(ctx, "share/invite", params, []int{http.StatusOK, http.StatusMultiStatus}, nil); err != nil {
+		return nil, err
 	}
 
 	obj := &ShareInviteResponse{}
-	if err := json.Unmarshal(body, obj); err != nil {
+	if err := s.unmarshalBody(res, obj); err != nil {
 		return nil, err
 	}
 

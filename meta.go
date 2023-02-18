@@ -2,8 +2,6 @@ package go_hidrive
 
 import (
 	"context"
-	"encoding/json"
-	"io"
 	"net/http"
 	"net/url"
 )
@@ -48,26 +46,16 @@ Supported parameters:
 */
 func (m Meta) Get(ctx context.Context, params url.Values) (*Object, error) {
 	var (
-		res  *http.Response
-		body []byte
+		res *http.Response
+		err error
 	)
 
-	{
-		var err error
-		if res, err = m.doGET(ctx, "meta", params, []int{http.StatusOK}); err != nil {
-			return nil, err
-		}
-	}
-
-	{
-		var err error
-		if body, err = io.ReadAll(res.Body); err != nil {
-			return nil, err
-		}
+	if res, err = m.doGET(ctx, "meta", params, []int{http.StatusOK}); err != nil {
+		return nil, err
 	}
 
 	obj := &Object{}
-	if err := json.Unmarshal(body, obj); err != nil {
+	if err := m.unmarshalBody(res, obj); err != nil {
 		return nil, err
 	}
 
@@ -95,26 +83,16 @@ Supported parameters:
 */
 func (m Meta) Update(ctx context.Context, params url.Values) (*Object, error) {
 	var (
-		res  *http.Response
-		body []byte
+		res *http.Response
+		err error
 	)
 
-	{
-		var err error
-		if res, err = m.doPATCH(ctx, "meta", params, []int{http.StatusOK, http.StatusNoContent}, nil); err != nil {
-			return nil, err
-		}
-	}
-
-	{
-		var err error
-		if body, err = io.ReadAll(res.Body); err != nil {
-			return nil, err
-		}
+	if res, err = m.doPATCH(ctx, "meta", params, []int{http.StatusOK, http.StatusNoContent}, nil); err != nil {
+		return nil, err
 	}
 
 	obj := &Object{}
-	if err := json.Unmarshal(body, obj); err != nil {
+	if err := m.unmarshalBody(res, obj); err != nil {
 		return nil, err
 	}
 
