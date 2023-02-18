@@ -10,25 +10,25 @@ import (
 )
 
 /*
-DirApi - structure represents a set of methods for interacting with HiDrive `/dir` API endpoint.
+Dir - structure represents a set of methods for interacting with HiDrive `/dir` API endpoint.
 */
-type DirApi struct {
+type Dir struct {
 	Api
 }
 
 /*
-NewDirApi - create new instance of [DirApi].
+NewDir - create new instance of [Dir].
 
 Accepts http.Client and API endpoint as input parameters.
 If `endpoint` is empty string, then default [StratoHiDriveAPIV21] value is used.
 */
-func NewDirApi(client *http.Client, endpoint string) DirApi {
+func NewDir(client *http.Client, endpoint string) Dir {
 	api := NewApi(client, endpoint)
-	return DirApi{api}
+	return Dir{api}
 }
 
 /*
-GetDir - this method allows to query information about a given directory and all its contents.
+Get - this method allows to query information about a given directory and all its contents.
 
 In short; A few things to be aware of:
 - path and name values are returned as URL-encoded strings
@@ -57,9 +57,9 @@ Supported parameters:
   - sort ([Parameters.SetSortBy])
   - sort_lang ([Parameters.SetSortLang])
 
-Returns [HiDriveObject] with information about given directory.
+Returns [Object] with information about given directory.
 */
-func (d DirApi) GetDir(ctx context.Context, params url.Values) (*HiDriveObject, error) {
+func (d Dir) Get(ctx context.Context, params url.Values) (*Object, error) {
 	var (
 		res  *http.Response
 		body []byte
@@ -67,13 +67,9 @@ func (d DirApi) GetDir(ctx context.Context, params url.Values) (*HiDriveObject, 
 
 	{
 		var err error
-		if res, err = d.doGET(ctx, "dir", params); err != nil {
+		if res, err = d.doGET(ctx, "dir", params, []int{http.StatusOK}); err != nil {
 			return nil, err
 		}
-	}
-
-	if err := d.checkHTTPStatusError([]int{http.StatusOK}, res); err != nil {
-		return nil, err
 	}
 
 	{
@@ -83,7 +79,7 @@ func (d DirApi) GetDir(ctx context.Context, params url.Values) (*HiDriveObject, 
 		}
 	}
 
-	hdObj := &HiDriveObject{}
+	hdObj := &Object{}
 	if err := hdObj.UnmarshalJSON(body); err != nil {
 		return nil, err
 	}
@@ -92,7 +88,7 @@ func (d DirApi) GetDir(ctx context.Context, params url.Values) (*HiDriveObject, 
 }
 
 /*
-CreateDir - this method creates a new directory.
+Create - this method creates a new directory.
 
 Provide a `path` and optional superior `pid` to create a new directory.
 Both, the `pid` and `path` parameters identify a filesystem object, at least one of them is always mandatory.
@@ -100,7 +96,7 @@ It is allowed to use both together, in which case pid addresses a parent directo
 considered relative to that directory.
 
 Note: This will not create all missing parent directories - the parent directory within path has to exist!
-To create all missing parent directories in one shot use [DirApi.CreatePath] method.
+To create all missing parent directories in one shot use [Dir.CreatePath] method.
 
 Status codes:
   - 201 - Created
@@ -117,9 +113,9 @@ Supported parameters:
   - mtime ([Parameters.SetMTime])
   - parent_mtime ([Parameters.SetParentMTime])
 
-Returns [HiDriveObject] with information about the directory created.
+Returns [Object] with information about the directory created.
 */
-func (d DirApi) CreateDir(ctx context.Context, params url.Values) (*HiDriveObject, error) {
+func (d Dir) Create(ctx context.Context, params url.Values) (*Object, error) {
 	var (
 		res  *http.Response
 		body []byte
@@ -127,13 +123,9 @@ func (d DirApi) CreateDir(ctx context.Context, params url.Values) (*HiDriveObjec
 
 	{
 		var err error
-		if res, err = d.doPOST(ctx, "dir", params, nil); err != nil {
+		if res, err = d.doPOST(ctx, "dir", params, []int{http.StatusCreated}, nil); err != nil {
 			return nil, err
 		}
-	}
-
-	if err := d.checkHTTPStatusError([]int{http.StatusCreated}, res); err != nil {
-		return nil, err
 	}
 
 	{
@@ -143,7 +135,7 @@ func (d DirApi) CreateDir(ctx context.Context, params url.Values) (*HiDriveObjec
 		}
 	}
 
-	hdObj := &HiDriveObject{}
+	hdObj := &Object{}
 	if err := hdObj.UnmarshalJSON(body); err != nil {
 		return nil, err
 	}
@@ -152,14 +144,14 @@ func (d DirApi) CreateDir(ctx context.Context, params url.Values) (*HiDriveObjec
 }
 
 /*
-CreatePath - this method performs the same action as [DirApi.CreateDir] and also creates all parent directories
+CreatePath - this method performs the same action as [Dir.Create] and also creates all parent directories
 if they are missing.
 
 Note: method does not support `pid` parameter, only `path` can be used
 
-Returns [HiDriveObject] with information about the directory created.
+Returns [Object] with information about the directory created.
 */
-func (d DirApi) CreatePath(ctx context.Context, params url.Values) (*HiDriveObject, error) {
+func (d Dir) CreatePath(ctx context.Context, params url.Values) (*Object, error) {
 	path := params.Get("path")
 	if len(path) < 1 {
 		return nil, fmt.Errorf("path: %w", ErrShouldNotBeEmpty)
@@ -169,18 +161,18 @@ func (d DirApi) CreatePath(ctx context.Context, params url.Values) (*HiDriveObje
 	for k := range dirs[:len(dirs)-1] {
 		dir := fmt.Sprintf("/%s", strings.Join(dirs[1:k+1], "/"))
 		tmpp := NewParameters().SetMembers([]string{"none"}).SetFields([]string{"path"}).SetPath(dir)
-		if _, err := d.GetDir(ctx, tmpp.Values); err == nil {
+		if _, err := d.Get(ctx, tmpp.Values); err == nil {
 			continue
 		}
-		if _, err := d.CreateDir(ctx, NewParameters().SetPath(dir).Values); err != nil {
+		if _, err := d.Create(ctx, NewParameters().SetPath(dir).Values); err != nil {
 			return nil, err
 		}
 	}
-	return d.CreateDir(ctx, NewParameters().SetPath(path).Values)
+	return d.Create(ctx, NewParameters().SetPath(path).Values)
 }
 
 /*
-DeleteDir - this method deletes a given directory.
+Delete - this method deletes a given directory.
 
 The optional parameter `recursive` determines, whether the operation shall fail on non-empty directories
 (which is also the default behavior), or continue deleting recursively all contents.
@@ -208,19 +200,9 @@ Supported parameters:
   - recursive ([Parameters.SetRecursive])
   - parent_mtime ([Parameters.SetParentMTime])
 */
-func (d DirApi) DeleteDir(ctx context.Context, params url.Values) error {
-	var res *http.Response
-
-	{
-		var err error
-		if res, err = d.doDELETE(ctx, "dir", params); err != nil {
-			return err
-		}
-	}
-
-	if err := d.checkHTTPStatusError([]int{http.StatusNoContent}, res); err != nil {
+func (d Dir) Delete(ctx context.Context, params url.Values) error {
+	if _, err := d.doDELETE(ctx, "dir", params, []int{http.StatusNoContent}); err != nil {
 		return err
 	}
-
 	return nil
 }

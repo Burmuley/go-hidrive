@@ -26,7 +26,7 @@ func (c *ClosingBuffer) Close() (err error) {
 
 func TestFileApi_UploadFile(t *testing.T) {
 	type fields struct {
-		Api FileApi
+		Api File
 	}
 	type args struct {
 		params   url.Values
@@ -38,14 +38,14 @@ func TestFileApi_UploadFile(t *testing.T) {
 		t.Errorf("error setting up HTTP client: %s", err.Error())
 		return
 	}
-	fileApi := NewFileApi(client, StratoHiDriveAPIV21)
+	fileApi := NewFile(client, StratoHiDriveAPIV21)
 	ctx := context.Background()
 
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *HiDriveObject
+		want    *Object
 		wantErr bool
 	}{
 		{
@@ -70,9 +70,9 @@ func TestFileApi_UploadFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := fileApi.UploadFile(ctx, tt.args.params, tt.args.fileBody)
+			_, err := fileApi.Upload(ctx, tt.args.params, tt.args.fileBody)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("UploadFile() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Upload() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 		})
@@ -81,7 +81,7 @@ func TestFileApi_UploadFile(t *testing.T) {
 
 func TestFileApi_DeleteFile(t *testing.T) {
 	type fields struct {
-		Api FileApi
+		Api File
 	}
 	type args struct {
 		params url.Values
@@ -92,7 +92,7 @@ func TestFileApi_DeleteFile(t *testing.T) {
 		t.Errorf("error setting up HTTP client: %s", err.Error())
 		return
 	}
-	fileApi := NewFileApi(client, StratoHiDriveAPIV21)
+	fileApi := NewFile(client, StratoHiDriveAPIV21)
 	ctx := context.Background()
 
 	tests := []struct {
@@ -124,7 +124,7 @@ func TestFileApi_DeleteFile(t *testing.T) {
 					}
 					path := fmt.Sprintf("/public/%s", uuid.New().String())
 					prm := NewParameters().SetFilePath(path).Values
-					if _, err := fileApi.UploadFile(ctx, prm, buf); err != nil {
+					if _, err := fileApi.Upload(ctx, prm, buf); err != nil {
 						return ""
 					}
 
@@ -137,8 +137,8 @@ func TestFileApi_DeleteFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := fileApi.DeleteFile(ctx, tt.args.params); (err != nil) != tt.wantErr {
-				t.Errorf("DeleteFile() error = %v, wantErr %v", err, tt.wantErr)
+			if err := fileApi.Delete(ctx, tt.args.params); (err != nil) != tt.wantErr {
+				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

@@ -11,9 +11,9 @@ import (
 	"testing"
 )
 
-func TestDirApi_GetDir(t *testing.T) {
+func TestDir_Get(t *testing.T) {
 	type fields struct {
-		Api DirApi
+		Api Dir
 	}
 	type args struct {
 		params url.Values
@@ -23,14 +23,14 @@ func TestDirApi_GetDir(t *testing.T) {
 		t.Errorf("error setting up HTTP client: %s", err.Error())
 		return
 	}
-	dirApi := NewDirApi(client, StratoHiDriveAPIV21)
+	dirApi := NewDir(client, StratoHiDriveAPIV21)
 	ctx := context.Background()
 
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *HiDriveObject
+		want    *Object
 		wantErr bool
 	}{
 		{
@@ -65,20 +65,20 @@ func TestDirApi_GetDir(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := dirApi.GetDir(ctx, tt.args.params)
+			_, err := dirApi.Get(ctx, tt.args.params)
 			ddParams := NewParameters().SetPath(tt.args.params.Get("path")).SetRecursive(false).Values
-			_ = dirApi.DeleteDir(ctx, ddParams)
+			_ = dirApi.Delete(ctx, ddParams)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetDir() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 		})
 	}
 }
 
-func TestDirApi_DeleteDir(t *testing.T) {
+func TestDir_Delete(t *testing.T) {
 	type fields struct {
-		Api DirApi
+		Api Dir
 	}
 	type args struct {
 		params url.Values
@@ -89,7 +89,7 @@ func TestDirApi_DeleteDir(t *testing.T) {
 		t.Errorf("error setting up HTTP client: %s", err.Error())
 		return
 	}
-	dirApi := NewDirApi(client, StratoHiDriveAPIV21)
+	dirApi := NewDir(client, StratoHiDriveAPIV21)
 	ctx := context.Background()
 
 	tests := []struct {
@@ -109,16 +109,16 @@ func TestDirApi_DeleteDir(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := dirApi.DeleteDir(ctx, tt.args.params); (err != nil) != tt.wantErr {
-				t.Errorf("DeleteDir() error = %v, wantErr %v", err, tt.wantErr)
+			if err := dirApi.Delete(ctx, tt.args.params); (err != nil) != tt.wantErr {
+				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
 }
 
-func TestDirApi_CreateDir(t *testing.T) {
+func TestDir_Create(t *testing.T) {
 	type fields struct {
-		Api DirApi
+		Api Dir
 	}
 	type args struct {
 		params url.Values
@@ -129,14 +129,14 @@ func TestDirApi_CreateDir(t *testing.T) {
 		t.Errorf("error setting up HTTP client: %s", err.Error())
 		return
 	}
-	dirApi := NewDirApi(client, StratoHiDriveAPIV21)
+	dirApi := NewDir(client, StratoHiDriveAPIV21)
 	ctx := context.Background()
 
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *HiDriveObject
+		want    *Object
 		wantErr bool
 	}{
 		{
@@ -158,18 +158,18 @@ func TestDirApi_CreateDir(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := dirApi.CreateDir(ctx, tt.args.params)
+			_, err := dirApi.Create(ctx, tt.args.params)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("CreateDir() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Create() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 		})
 	}
 }
 
-func TestDirApi_CreatePath(t *testing.T) {
+func TestDir_CreatePath(t *testing.T) {
 	type fields struct {
-		Api DirApi
+		Api Dir
 	}
 	type args struct {
 		params url.Values
@@ -180,14 +180,14 @@ func TestDirApi_CreatePath(t *testing.T) {
 		t.Errorf("error setting up HTTP client: %s", err.Error())
 		return
 	}
-	dirApi := NewDirApi(client, StratoHiDriveAPIV21)
+	dirApi := NewDir(client, StratoHiDriveAPIV21)
 	ctx := context.Background()
 
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *HiDriveObject
+		want    *Object
 		wantErr bool
 	}{
 		{

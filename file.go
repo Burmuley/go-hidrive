@@ -8,25 +8,25 @@ import (
 )
 
 /*
-FileApi - structure represents a set of methods for interacting with HiDrive `/file` API endpoint.
+File - structure represents a set of methods for interacting with HiDrive `/file` API endpoint.
 */
-type FileApi struct {
+type File struct {
 	Api
 }
 
 /*
-NewFileApi - create new instance of FileApi.
+NewFile - create new instance of File.
 
 Accepts http.Client and API endpoint as input parameters.
 If `endpoint` is empty string, then default `StratoHiDriveAPIV21` value is used.
 */
-func NewFileApi(client *http.Client, endpoint string) FileApi {
+func NewFile(client *http.Client, endpoint string) File {
 	api := NewApi(client, endpoint)
-	return FileApi{api}
+	return File{api}
 }
 
 /*
-GetFile - This method retrieves a given file from the HiDrive.
+Get - This method retrieves a given file from the HiDrive.
 
 Usage details:
 Both, the `pid` and `path` parameters identify a filesystem object, at least one of them is always mandatory.
@@ -48,25 +48,21 @@ Supported parameters:
 
 Returns an io.ReadCloser object to read file contents using standard Go mechanisms.
 */
-func (f FileApi) GetFile(ctx context.Context, params url.Values) (io.ReadCloser, error) {
+func (f File) Get(ctx context.Context, params url.Values) (io.ReadCloser, error) {
 	var res *http.Response
 
 	{
 		var err error
-		if res, err = f.doGET(ctx, "file", params); err != nil {
+		if res, err = f.doGET(ctx, "file", params, []int{http.StatusOK}); err != nil {
 			return nil, err
 		}
-	}
-
-	if err := f.checkHTTPStatusError([]int{http.StatusOK}, res); err != nil {
-		return nil, err
 	}
 
 	return res.Body, nil
 }
 
 /*
-UploadFile -This method can be used to create a new file and store uploaded content.
+Upload -This method can be used to create a new file and store uploaded content.
 
 Using POST guarantees that existing files will not be overwritten.
 
@@ -105,9 +101,9 @@ Supported parameters:
   - mtime ([Parameters.SetMTime])
   - parent_mtime ([Parameters.SetParentMTime])
 
-Returns [HiDriveObject] with information about uploaded file.
+Returns [Object] with information about uploaded file.
 */
-func (f FileApi) UploadFile(ctx context.Context, params url.Values, fileBody io.ReadCloser) (*HiDriveObject, error) {
+func (f File) Upload(ctx context.Context, params url.Values, fileBody io.ReadCloser) (*Object, error) {
 	var (
 		res  *http.Response
 		body []byte
@@ -115,13 +111,9 @@ func (f FileApi) UploadFile(ctx context.Context, params url.Values, fileBody io.
 
 	{
 		var err error
-		if res, err = f.doPOST(ctx, "file", params, fileBody); err != nil {
+		if res, err = f.doPOST(ctx, "file", params, []int{http.StatusCreated}, fileBody); err != nil {
 			return nil, err
 		}
-	}
-
-	if err := f.checkHTTPStatusError([]int{http.StatusCreated}, res); err != nil {
-		return nil, err
 	}
 
 	{
@@ -131,7 +123,7 @@ func (f FileApi) UploadFile(ctx context.Context, params url.Values, fileBody io.
 		}
 	}
 
-	hdObj := &HiDriveObject{}
+	hdObj := &Object{}
 	if err := hdObj.UnmarshalJSON(body); err != nil {
 		return nil, err
 	}
@@ -140,7 +132,7 @@ func (f FileApi) UploadFile(ctx context.Context, params url.Values, fileBody io.
 }
 
 /*
-DeleteFile - Delete a given file.
+Delete - Delete a given file.
 Both, the pid and path parameters identify a filesystem object, at least one of them is always mandatory.
 It is allowed to use both together, in which case pid addresses a parent directory and the value of path is then considered relative to that directory. (<pid>/<path>)
 
@@ -162,28 +154,18 @@ Supported parameters:
   - pid ([Parameters.SetPid])
   - parent_mtime ([Parameters.SetParentMTime])
 */
-func (f FileApi) DeleteFile(ctx context.Context, params url.Values) error {
-	var res *http.Response
-
-	{
-		var err error
-		if res, err = f.doDELETE(ctx, "file", params); err != nil {
-			return err
-		}
-	}
-
-	if err := f.checkHTTPStatusError([]int{http.StatusNoContent}, res); err != nil {
+func (f File) Delete(ctx context.Context, params url.Values) error {
+	if _, err := f.doDELETE(ctx, "file", params, []int{http.StatusNoContent}); err != nil {
 		return err
 	}
-
 	return nil
 }
 
 /*
-UpdateFile - Update a file by overwriting the target file with uploaded content.
+Update - Update a file by overwriting the target file with uploaded content.
 If the target file does not exist it will be created.
 
-If you wish to create a file without overwriting data, use [FileApi.UploadFile].
+If you wish to create a file without overwriting data, use [File.Upload].
 
 Usage Details:
 
@@ -219,9 +201,9 @@ Supported parameters:
   - mtime ([Parameters.SetMTime])
   - parent_mtime ([Parameters.SetParentMTime])
 
-Returns [HiDriveObject] with information about uploaded file.
+Returns [Object] with information about uploaded file.
 */
-func (f FileApi) UpdateFile(ctx context.Context, params url.Values, fileBody io.ReadCloser) (*HiDriveObject, error) {
+func (f File) Update(ctx context.Context, params url.Values, fileBody io.ReadCloser) (*Object, error) {
 	var (
 		res  *http.Response
 		body []byte
@@ -229,13 +211,9 @@ func (f FileApi) UpdateFile(ctx context.Context, params url.Values, fileBody io.
 
 	{
 		var err error
-		if res, err = f.doPUT(ctx, "file", params, fileBody); err != nil {
+		if res, err = f.doPUT(ctx, "file", params, []int{http.StatusOK}, fileBody); err != nil {
 			return nil, err
 		}
-	}
-
-	if err := f.checkHTTPStatusError([]int{http.StatusOK}, res); err != nil {
-		return nil, err
 	}
 
 	{
@@ -245,7 +223,7 @@ func (f FileApi) UpdateFile(ctx context.Context, params url.Values, fileBody io.
 		}
 	}
 
-	hdObj := &HiDriveObject{}
+	hdObj := &Object{}
 	if err := hdObj.UnmarshalJSON(body); err != nil {
 		return nil, err
 	}
