@@ -210,3 +210,135 @@ func (f File) Update(ctx context.Context, params url.Values, fileBody io.ReadClo
 
 	return obj, nil
 }
+
+/*
+Copy - copy a file.
+
+The parameters `src` and `src_id` as well as `dst` and `dst_id` identify the source and destination for the operation.
+At least one source identifier and `dst` are always mandatory.
+It is allowed to use the related parameters together, in which case `src_id` and `dst_id` each address a parent
+directory and the values of `src` and `dst` are considered relative to that directory (e.g.<src_id>/<src>).
+
+Status codes:
+  - 200 - OK
+  - 400 - Bad Request (e.g. invalid parameter)
+  - 401 - Unauthorized (password required)
+  - 403 - Forbidden (wrong password)
+  - 404 - Not Found (ID does not exist or given path is not shared).
+  - 409 - Conflict
+  - 422 - Unprocessable Entity (e.g. name too long)
+  - 500 - Internal Error
+
+Supported parameters:
+  - src
+  - src_id
+  - dst
+  - dst_id
+  - on_exist ([Parameters.SetOnExist]) (possible values: `autoname`, `overwrite`)
+  - dst_parent_mtime
+  - preserve_mtime
+*/
+func (f File) Copy(ctx context.Context, params url.Values) (*Object, error) {
+	var (
+		res *http.Response
+		err error
+	)
+
+	if res, err = f.doPOST(ctx, "file/copy", params, []int{http.StatusCreated}, nil); err != nil {
+		return nil, err
+	}
+
+	obj := &Object{}
+	if err := f.unmarshalBody(res, obj); err != nil {
+		return nil, err
+	}
+
+	return obj, nil
+}
+
+/*
+Move - move a file.
+
+The parameters `src` and `src_id` as well as `dst` and `dst_id` identify the source and destination for the operation.
+At least one source identifier and `dst` are always mandatory.
+It is allowed to use the related parameters together, in which case `src_id` and `dst_id` each address a parent
+directory and the values of `src` and `dst` are considered relative to that directory (e.g.<src_id>/<src>).
+
+Status codes:
+  - 200 - OK
+  - 400 - Bad Request (e.g. invalid parameter)
+  - 401 - Unauthorized (password required)
+  - 403 - Forbidden (wrong password)
+  - 404 - Not Found (ID does not exist or given path is not shared).
+  - 409 - Conflict
+  - 422 - Unprocessable Entity (e.g. name too long)
+  - 500 - Internal Error
+
+Supported parameters:
+  - src
+  - src_id
+  - dst
+  - dst_id
+  - on_exist ([Parameters.SetOnExist]) (possible values: `autoname`, `overwrite`)
+  - src_parent_mtime
+  - dst_parent_mtime
+*/
+func (f File) Move(ctx context.Context, params url.Values) (*Object, error) {
+	var (
+		res *http.Response
+		err error
+	)
+
+	if res, err = f.doPOST(ctx, "file/move", params, []int{http.StatusCreated}, nil); err != nil {
+		return nil, err
+	}
+
+	obj := &Object{}
+	if err := f.unmarshalBody(res, obj); err != nil {
+		return nil, err
+	}
+
+	return obj, nil
+}
+
+/*
+Rename - rename a file.
+
+Both, the `pid` and `path` parameters identify a filesystem object, at least one of them is always mandatory.
+It is allowed to use both together, in which case `pid` addresses a parent directory and the value of `path` is then
+considered relative to that directory (<pid>/<path>).
+
+Status codes:
+  - 201 - Created
+  - 400 - Bad Request (e.g. invalid parameter)
+  - 401 - Unauthorized (password required)
+  - 403 - Forbidden (wrong password)
+  - 404 - Not Found (ID does not exist or given path is not shared).
+  - 409 - Conflict
+  - 422 - Unprocessable Entity (e.g. name too long)
+  - 500 - Internal Error
+
+Supported parameters:
+  - path ([Parameters.SetPath])
+  - pid ([Parameters.SetPid])
+  - name ([Parameters.SetName])
+  - on_exist ([Parameters.SetOnExist]) (possible values: `autoname`, `overwrite`)
+  - parent_mtime ([Parameters.SetParentMTime])
+*/
+func (f File) Rename(ctx context.Context, params url.Values) (*Object, error) {
+	var (
+		res *http.Response
+		err error
+	)
+
+	if res, err = f.doPOST(ctx, "file/rename", params, []int{http.StatusCreated}, nil); err != nil {
+		return nil, err
+	}
+
+	obj := &Object{}
+	if err := f.unmarshalBody(res, obj); err != nil {
+		return nil, err
+	}
+
+	return obj, nil
+}

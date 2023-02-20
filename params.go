@@ -72,8 +72,7 @@ Can be used in the following methods:
   - [Dir.Get]
 */
 func (p *Parameters) SetMembers(members []string) *Parameters {
-	memStr := strings.Join(members, ",")
-	p.Set("members", memStr)
+	p.Set("members", strings.Join(members, ","))
 	return p
 }
 
@@ -183,8 +182,7 @@ Valid values for [Share.Get]:
   - writable        - bool
 */
 func (p *Parameters) SetFields(fields []string) *Parameters {
-	fieldsStr := strings.Join(fields, ",")
-	p.Set("fields", fieldsStr)
+	p.Set("fields", strings.Join(fields, ","))
 	return p
 }
 
@@ -249,8 +247,7 @@ Can be used in the following methods:
   - [Meta.Update]
 */
 func (p *Parameters) SetMTime(t time.Time) *Parameters {
-	timeStr := fmt.Sprint(t.Unix())
-	p.Set("mtime", timeStr)
+	p.Set("mtime", fmt.Sprint(t.Unix()))
 	return p
 }
 
@@ -265,8 +262,7 @@ Can be used in the following methods:
   - [File.Upload]
 */
 func (p *Parameters) SetParentMTime(t time.Time) *Parameters {
-	timeStr := fmt.Sprint(t.Unix())
-	p.Set("parent_mtime", timeStr)
+	p.Set("parent_mtime", fmt.Sprint(t.Unix()))
 	return p
 }
 
@@ -494,5 +490,111 @@ Can be used in the following methods:
 */
 func (p *Parameters) SetMsg(msg string) *Parameters {
 	p.Set("msg", msg)
+	return p
+}
+
+/*
+SetSrc - adds "src" parameter to the request - the path to the filesystem object to be used as the source for
+the operation.
+
+Example: /users/example/something
+
+It is not allowed to use only "/" as a source, since it is the parent for all possible targets.
+Note: if used in combination with a src_id, this value is not allowed to start with "/" either.
+
+Can be used in the following methods:
+  - [File.Copy]
+  - [File.Move]
+*/
+func (p *Parameters) SetSrc(src string) *Parameters {
+	p.Set("src", src)
+	return p
+}
+
+/*
+SetSrcId - adds "src_id" parameter to the request - the public id (`pid`) of the source filesystem object
+(or when used in combination with src, its parent directory.)
+
+Example: b1489258310.123
+
+Note: a pid is not persistent upon changes (rename/move) to a filesystem object.
+So after this operation, the src_id may no longer be valid. However, the current value will be part of the returned
+information (as id) after a successful request.
+
+Can be used in the following methods:
+  - [File.Copy]
+  - [File.Move]
+*/
+func (p *Parameters) SetSrcId(srcId string) *Parameters {
+	p.Set("src_id", srcId)
+	return p
+}
+
+/*
+SetDst - adds "dst" parameter to the request - the path to the filesystem object to be used as the destination for
+the operation.
+
+Example: /users/example/archive/something
+
+Note: if used in combination with a dst_id, this value is not allowed to start with "/".
+
+Can be used in the following methods:
+  - [File.Copy]
+  - [File.Move]
+*/
+func (p *Parameters) SetDst(dst string) *Parameters {
+	p.Set("dst", dst)
+	return p
+}
+
+/*
+SetDstId - adds "dst_id" parameter to the request - if provided, this must always be the pid of a parent directory
+of the dst.
+
+Example: b1489258310.123
+
+Can be used in the following methods:
+  - [File.Copy]
+  - [File.Move]
+*/
+func (p *Parameters) SetDstId(dstId string) *Parameters {
+	p.Set("dst_id", dstId)
+	return p
+}
+
+/*
+SetSrcParentMTime - adds "src_parent_mtime" parameter to the request - the modification time (mtime) of the source
+parent folder to be set after the operation.
+
+Can be used in the following methods:
+  - [File.Move]
+*/
+func (p *Parameters) SetSrcParentMTime(t time.Time) *Parameters {
+	p.Set("src_parent_mtime", fmt.Sprint(t.Unix()))
+	return p
+}
+
+/*
+SetDstParentMTime - adds "dst_parent_mtime" parameter to the request - the modification time (mtime) of the destination
+parent folder to be set after the operation.
+
+Can be used in the following methods:
+  - [File.Copy]
+  - [File.Move]
+*/
+func (p *Parameters) SetDstParentMTime(t time.Time) *Parameters {
+	p.Set("dst_parent_mtime", fmt.Sprint(t.Unix()))
+	return p
+}
+
+/*
+SetPreserveMTime - adds "preserve_mtime" parameter to the request - the modification time (mtime) of the target will be
+copied from the source after the operation.
+
+Can be used in the following methods:
+  - [File.Copy]
+*/
+func (p *Parameters) SetPreserveMTime(pmTime bool) *Parameters {
+	p.Set("preserve_mtime", fmt.Sprint(pmTime))
 	return p
 }
