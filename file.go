@@ -244,7 +244,7 @@ func (f File) Copy(ctx context.Context, params url.Values) (*Object, error) {
 		err error
 	)
 
-	if res, err = f.doPOST(ctx, "file/copy", params, []int{http.StatusCreated}, nil); err != nil {
+	if res, err = f.doPOST(ctx, "file/copy", params, []int{http.StatusOK}, nil); err != nil {
 		return nil, err
 	}
 
@@ -289,7 +289,7 @@ func (f File) Move(ctx context.Context, params url.Values) (*Object, error) {
 		err error
 	)
 
-	if res, err = f.doPOST(ctx, "file/move", params, []int{http.StatusCreated}, nil); err != nil {
+	if res, err = f.doPOST(ctx, "file/move", params, []int{http.StatusOK}, nil); err != nil {
 		return nil, err
 	}
 
